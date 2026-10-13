@@ -176,6 +176,10 @@ typedef struct {
 } CanvasOffset;
 #endif
 
+#if PERTAG
+typedef struct Pertag Pertag; /* defined after config.h (needs LENGTH(tags)) */
+#endif
+
 struct Monitor {
 	char ltsymbol[16];
 	float mfact;
@@ -198,6 +202,9 @@ struct Monitor {
 	Monitor *next;
 	Window barwin;
 	const Layout *lt[2];
+#if PERTAG
+	Pertag *pertag;
+#endif
 #if INFINITE_TAGS
   CanvasOffset *canvas;
 #endif
@@ -360,6 +367,17 @@ static Colormap cmap;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 #include "modules/vxwm_includes.c"
+
+#if PERTAG
+struct Pertag {
+	unsigned int curtag, prevtag; /* current and previous tag */
+	int nmasters[LENGTH(tags) + 1]; /* number of windows in master area */
+	float mfacts[LENGTH(tags) + 1]; /* mfacts per tag */
+	unsigned int sellts[LENGTH(tags) + 1]; /* selected layouts */
+	const Layout *ltidxs[LENGTH(tags) + 1][2]; /* matrix of tags and layouts indexes */
+	int showbars[LENGTH(tags) + 1]; /* display bar for the current tag */
+};
+#endif
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
@@ -777,6 +795,21 @@ createmon(void)
 	m->lt[0] = &layouts[0];
 	m->lt[1] = &layouts[1 % LENGTH(layouts)];
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
+#if PERTAG
+	m->pertag = ecalloc(1, sizeof(Pertag));
+	m->pertag->curtag = m->pertag->prevtag = 1;
+
+	for (unsigned int i = 0; i <= LENGTH(tags); i++) {
+		m->pertag->nmasters[i] = m->nmaster;
+		m->pertag->mfacts[i] = m->mfact;
+
+		m->pertag->ltidxs[i][0] = m->lt[0];
+		m->pertag->ltidxs[i][1] = m->lt[1];
+		m->pertag->sellts[i] = m->sellt;
+
+		m->pertag->showbars[i] = m->showbar;
+	}
+#endif
 #if INFINITE_TAGS
   m->canvas = ecalloc(LENGTH(tags), sizeof(CanvasOffset));
   unsigned int i;
@@ -1204,7 +1237,11 @@ incnmaster(const Arg *arg)
 			moved = nexttiled(moved->next);
 	}
 	
+#if PERTAG
+	selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag] = MAX(selmon->nmaster + arg->i, 0);
+#else
 	selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
+#endif
 	arrange(selmon);
 	
 	if (moved)
@@ -1216,7 +1253,11 @@ incnmaster(const Arg *arg)
 void
 incnmaster(const Arg *arg)
 {
+#if PERTAG
+	selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag] = MAX(selmon->nmaster + arg->i, 0);
+#else
 	selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
+#endif
 	arrange(selmon);
 }
 
@@ -1929,9 +1970,17 @@ setlayout(const Arg *arg)
     const Layout *old_layout = selmon->lt[selmon->sellt];
 #endif    
     if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
+#if PERTAG
+        selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag] ^= 1;
+#else
         selmon->sellt ^= 1;
+#endif
     if (arg && arg->v)
+#if PERTAG
+        selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt] = (Layout *)arg->v;
+#else
         selmon->lt[selmon->sellt] = (Layout *)arg->v;
+#endif
 #if INFINITE_TAGS
     const Layout *new_layout = selmon->lt[selmon->sellt];
 
@@ -1967,7 +2016,11 @@ setmfact(const Arg *arg)
 	f = arg->f < 1.0 ? arg->f + selmon->mfact : arg->f - 1.0;
 	if (f < 0.05 || f > 0.95)
 		return;
+#if PERTAG
+	selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag] = f;
+#else
 	selmon->mfact = f;
+#endif
 	arrange(selmon);
 }
 
@@ -2236,7 +2289,11 @@ tile(Monitor *m)
 void
 togglebar(const Arg *arg)
 {
+#if PERTAG
+    selmon->showbar = selmon->pertag->showbars[selmon->pertag->curtag] = !selmon->showbar;
+#else
     selmon->showbar = !selmon->showbar;
+#endif
     updatebarpos(selmon);
 
     int bar_y;
@@ -2299,12 +2356,44 @@ void
 toggleview(const Arg *arg)
 {
 	unsigned int newtagset = selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK);
+#if PERTAG
+	int i;
 
+	if (newtagset) {
+		selmon->tagset[selmon->seltags] = newtagset;
+
+		if (newtagset == ~0) {
+			selmon->pertag->prevtag = selmon->pertag->curtag;
+			selmon->pertag->curtag = 0;
+		}
+
+		/* test if the user did not select the same tag */
+		if (!(newtagset & 1 << (selmon->pertag->curtag - 1))) {
+			selmon->pertag->prevtag = selmon->pertag->curtag;
+			for (i = 0; !(newtagset & 1 << i); i++) ;
+			selmon->pertag->curtag = i + 1;
+		}
+
+		/* apply settings for this view */
+		selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag];
+		selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag];
+		selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag];
+		selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];
+		selmon->lt[selmon->sellt^1] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt^1];
+
+		if (selmon->showbar != selmon->pertag->showbars[selmon->pertag->curtag])
+			togglebar(NULL);
+
+		focus(NULL);
+		arrange(selmon);
+	}
+#else
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
 		focus(NULL);
 		arrange(selmon);
 	}
+#endif
 #if EWMH_TAGS
   updatecurrentdesktop();
 #endif
@@ -2640,13 +2729,50 @@ view(const Arg *arg)
     }
 #endif
 
-    if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
+    if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags]) {
         selmon->seltags ^= 1;
-    else {
+#if PERTAG
+		/* toggled back to the alternate tagset: swap to previous view */
+		{
+			unsigned int tmptag = selmon->pertag->prevtag;
+			selmon->pertag->prevtag = selmon->pertag->curtag;
+			selmon->pertag->curtag = tmptag;
+		}
+#endif
+    } else {
         selmon->seltags ^= 1;
-        if (arg->ui & TAGMASK)
+        if (arg->ui & TAGMASK) {
             selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
+#if PERTAG
+			selmon->pertag->prevtag = selmon->pertag->curtag;
+			if (arg->ui == ~0) {
+				selmon->pertag->curtag = 0;
+			} else {
+				int i;
+				for (i = 0; !(arg->ui & 1 << i); i++) ;
+				selmon->pertag->curtag = i + 1;
+			}
+#endif
+        }
+#if PERTAG
+        else {
+			unsigned int tmptag = selmon->pertag->prevtag;
+			selmon->pertag->prevtag = selmon->pertag->curtag;
+			selmon->pertag->curtag = tmptag;
+        }
+#endif
     }
+
+#if PERTAG
+	selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag];
+	selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag];
+	selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag];
+	selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];
+	selmon->lt[selmon->sellt^1] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt^1];
+
+	if (selmon->showbar != selmon->pertag->showbars[selmon->pertag->curtag])
+		togglebar(NULL);
+#endif
 
 #if INFINITE_TAGS
     int newtag = getcurrenttag(selmon);
@@ -2684,8 +2810,38 @@ view(const Arg *arg)
     if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
         return;
     selmon->seltags ^= 1;
+#if PERTAG
+	int i;
+	unsigned int tmptag;
+
+	if (arg->ui & TAGMASK) {
+		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
+		selmon->pertag->prevtag = selmon->pertag->curtag;
+
+		if (arg->ui == ~0)
+			selmon->pertag->curtag = 0;
+		else {
+			for (i = 0; !(arg->ui & 1 << i); i++) ;
+			selmon->pertag->curtag = i + 1;
+		}
+	} else {
+		tmptag = selmon->pertag->prevtag;
+		selmon->pertag->prevtag = selmon->pertag->curtag;
+		selmon->pertag->curtag = tmptag;
+	}
+
+	selmon->nmaster = selmon->pertag->nmasters[selmon->pertag->curtag];
+	selmon->mfact = selmon->pertag->mfacts[selmon->pertag->curtag];
+	selmon->sellt = selmon->pertag->sellts[selmon->pertag->curtag];
+	selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];
+	selmon->lt[selmon->sellt^1] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt^1];
+
+	if (selmon->showbar != selmon->pertag->showbars[selmon->pertag->curtag])
+		togglebar(NULL);
+#else
     if (arg->ui & TAGMASK)
         selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
+#endif
 
 #if INFINITE_TAGS
     int newtag = getcurrenttag(selmon);
