@@ -1670,12 +1670,32 @@ void
 resizeclient(Client *c, int x, int y, int w, int h)
 {
 	XWindowChanges wc;
+#if SMARTBORDERS
+	unsigned int n;
+	Client *nbc;
+
+	/* Get number of tiled clients on the client's monitor */
+	for (n = 0, nbc = nexttiled(c->mon->clients); nbc; nbc = nexttiled(nbc->next), n++);
+
+	/* Remove border if layout is monocle or there is only one tiled
+	 * client (but never for floating windows); grow the window to
+	 * fill the border's space like dwm's uselessgaps does */
+	if (!c->isfloating && c->mon->lt[c->mon->sellt]->arrange != NULL &&
+	    (c->mon->lt[c->mon->sellt]->arrange == monocle || n == 1)) {
+		wc.border_width = 0;
+		w += 2 * c->bw;
+		h += 2 * c->bw;
+	} else {
+		wc.border_width = c->bw;
+	}
+#else
+	wc.border_width = c->bw;
+#endif
 
 	c->oldx = c->x; c->x = wc.x = x;
 	c->oldy = c->y; c->y = wc.y = y;
 	c->oldw = c->w; c->w = wc.width = w;
 	c->oldh = c->h; c->h = wc.height = h;
-	wc.border_width = c->bw;
 	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
 	configure(c);
 	XSync(dpy, False);

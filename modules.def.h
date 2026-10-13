@@ -38,6 +38,7 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 /* Kind of eye candy */
 #define GAPS 1 // Gaps support.
 #define XRDB 1 // Xrdb support.
+#define SMARTBORDERS 1 // Hides window borders in monocle layout or when only one tiled window is visible (smart-borders part of dwm's uselessgaps).
 
 
 
