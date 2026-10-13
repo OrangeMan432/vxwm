@@ -11,6 +11,9 @@ static const char *fonts[]          = { "monospace:size=10" };
 static const char dmenufont[]       = "monospace:size=10";
 #define COORDINATES_STYLE "[x%d y%d]" /* The style of coordinates displayed in bar, do not remove %d. */
 
+static unsigned int baralpha        = 0xd0;
+static unsigned int borderalpha     = OPAQUE;
+
 static MAYBE_CONST char normbgcolor[]           = "#222222";
 static MAYBE_CONST char normbordercolor[]       = "#444444";
 static MAYBE_CONST char normfgcolor[]           = "#bbbbbb";
