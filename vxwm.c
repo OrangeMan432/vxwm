@@ -186,6 +186,10 @@ struct Monitor {
 	int nmaster;
 	int num;
 	int by;               /* bar geometry */
+#if AWESOMEBAR
+	int btw;              /* width of tasks portion of bar */
+	int bt;               /* number of tasks */
+#endif
 	int mx, my, mw, mh;   /* screen size */
 	int wx, wy, ww, wh;   /* window area  */
 #if GAPS
@@ -580,8 +584,27 @@ buttonpress(XEvent *e)
 			click = ClkLtSymbol;
 		else if (ev->x > selmon->ww - (int)TEXTW(stext) + lrpad - 2)
 			click = ClkStatusText;
+#if AWESOMEBAR
+		else {
+			x += TEXTW(selmon->ltsymbol);
+			c = m->clients;
+
+			if (c) {
+				do {
+					if (!ISVISIBLE(c))
+						continue;
+					else
+						x += (1.0 / (double)m->bt) * m->btw;
+				} while (ev->x > x && (c = c->next));
+
+				click = ClkWinTitle;
+				arg.v = c;
+			}
+		}
+#else
 		else
 			click = ClkWinTitle;
+#endif
 	} else if ((c = wintoclient(ev->window))) {
 		focus(c);
 		restack(selmon);
@@ -592,7 +615,7 @@ buttonpress(XEvent *e)
 	for (i = 0; i < LENGTH(buttons); i++)
 		if (click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
-			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+			buttons[i].func((click == ClkTagBar || click == ClkWinTitle) && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
 	if ((ev->button == Button4 || ev->button == Button5) && click == ClkClientWin)
 		XAllowEvents(dpy, AsyncPointer, CurrentTime);
 }
@@ -876,6 +899,9 @@ void
 drawbar(Monitor *m)
 {
 	int x, w, tw = 0;
+#if AWESOMEBAR
+	int n = 0, scm;
+#endif
 	int boxs = drw->fonts->h / 9;
 	int boxw = drw->fonts->h / 6 + 2;
 	unsigned int i, occ = 0, urg = 0;
@@ -951,6 +977,49 @@ drawbar(Monitor *m)
 #endif
 
 	if ((w = m->ww - tw - x) > bh) {
+#if AWESOMEBAR
+		for (c = m->clients; c; c = c->next)
+			if (ISVISIBLE(c))
+				n++;
+
+#if BAR_PADDING
+		/* tab contents must fit inside the narrowed bar window: deduct the
+		 * padding from the total once (like the vanilla title does), then
+		 * split the remainder into seamless tabs */
+		w -= lsp + rsp;
+#endif
+		if (n > 0 && w > 0) {
+			int remainder = w % n;
+			int tabw = (1.0 / (double)n) * w + 1;
+			for (c = m->clients; c; c = c->next) {
+				if (!ISVISIBLE(c))
+					continue;
+#if ALT_CENTER_OF_BAR_COLOR
+				/* a lone tab is the whole bar center: keep it unhighlighted
+				 * like the vanilla center is with ALT_CENTER_OF_BAR_COLOR */
+				if (m->sel == c && n > 1)
+#else
+				if (m->sel == c)
+#endif
+					scm = SchemeSel;
+				else
+					scm = SchemeNorm;
+				drw_setscheme(drw, scheme[scm]);
+
+				if (remainder >= 0) {
+					if (remainder == 0) {
+						tabw--;
+					}
+					remainder--;
+				}
+				drw_text(drw, x, 0, tabw, bh, lrpad / 2, c->name, 0);
+				x += tabw;
+			}
+		} else {
+			drw_setscheme(drw, scheme[SchemeNorm]);
+			drw_rect(drw, x, 0, w > 0 ? w : 0, bh, 1, 1);
+		}
+#else
 		if (m->sel) {
 #if !ALT_CENTER_OF_BAR_COLOR
 			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
@@ -969,10 +1038,15 @@ drawbar(Monitor *m)
 #if !BAR_PADDING
 			drw_rect(drw, x, 0, w, bh, 1, 1);
 #else
-      drw_rect(drw, x, 0, w - lsp - rsp, bh, 1, 1);
+			drw_rect(drw, x, 0, w - lsp - rsp, bh, 1, 1);
 #endif
 		}
+#endif
 	}
+#if AWESOMEBAR
+	m->bt = n;
+	m->btw = w;
+#endif
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
 }
 
