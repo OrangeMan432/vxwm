@@ -737,10 +737,15 @@ configurenotify(XEvent *e)
 				for (c = m->clients; c; c = c->next)
 					if (c->isfullscreen)
 						resizeclient(c, m->mx, m->my, m->mw, m->mh);
-#if !BAR_PADDING
-				XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
+#if STATUSBARBORDER
+			int b = statusbarborder_px();
 #else
-        XMoveResizeWindow(dpy, m->barwin, m->wx + lsp, m->by + (m->topbar ? tvp : bvp), m->ww - lsp - rsp, bh);
+			int b = 0;
+#endif
+#if !BAR_PADDING
+			XMoveResizeWindow(dpy, m->barwin, m->wx - b, m->by - b, m->ww, bh);
+#else
+        XMoveResizeWindow(dpy, m->barwin, m->wx + lsp - b, m->by + (m->topbar ? tvp : bvp) - b, m->ww - lsp - rsp, bh);
 #endif
 			}
 			focus(NULL);
@@ -1046,6 +1051,9 @@ drawbar(Monitor *m)
 #if AWESOMEBAR
 	m->bt = n;
 	m->btw = w;
+#endif
+#if STATUSBARBORDER
+	statusbarborder_apply(m);
 #endif
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
 }
@@ -2401,11 +2409,16 @@ togglebar(const Arg *arg)
         }
     }
 
+#if STATUSBARBORDER
+    int b = statusbarborder_px();
+#else
+    int b = 0;
+#endif
 #if !BAR_PADDING
     XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, bar_y, selmon->ww, bh);
 #else
     int final_y = (selmon->showbar) ? (bar_y + (selmon->topbar ? tvp : bvp)) : bar_y;
-    XMoveResizeWindow(dpy, selmon->barwin, selmon->wx + lsp, final_y, selmon->ww - lsp - rsp, bh);
+    XMoveResizeWindow(dpy, selmon->barwin, selmon->wx + lsp - b, final_y - b, selmon->ww - lsp - rsp, bh);
 #endif
 
     arrange(selmon);
@@ -2557,6 +2570,11 @@ void
 updatebars(void)
 {
 	Monitor *m;
+#if STATUSBARBORDER
+	int bw = statusbarborder_px();
+#else
+	int bw = 0;
+#endif
 	XSetWindowAttributes wa = {
 		.override_redirect = True,
 		.background_pixel = 0,
@@ -2569,15 +2587,19 @@ updatebars(void)
 		if (m->barwin)
 			continue;
 #if !BAR_PADDING
-		m->barwin = XCreateWindow(dpy, root, m->wx, m->by, m->ww, bh, 0, depth,
+		m->barwin = XCreateWindow(dpy, root, m->wx - bw, m->by - bw, m->ww, bh, bw, depth,
 #else
-    m->barwin = XCreateWindow(dpy, root, m->wx + lsp, m->by + (m->topbar ? tvp : bvp), m->ww - lsp - rsp, bh, 0, depth,
+    m->barwin = XCreateWindow(dpy, root, m->wx + lsp - bw, m->by + (m->topbar ? tvp : bvp) - bw, m->ww - lsp - rsp, bh, bw, depth,
 #endif
 				InputOutput, visual,
 				CWOverrideRedirect|CWBackPixel|CWBorderPixel|CWColormap|CWEventMask, &wa);
 		XDefineCursor(dpy, m->barwin, cursor[CurNormal]->cursor);
 		XMapRaised(dpy, m->barwin);
 		XSetClassHint(dpy, m->barwin, &ch);
+#if STATUSBARBORDER
+		statusbarborder_reset(m);
+		statusbarborder_apply(m);
+#endif
 	}
 }
 

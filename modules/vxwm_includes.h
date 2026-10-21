@@ -55,3 +55,7 @@
 #if ZOOM
 #include "zoom/zoom.h"
 #endif
+
+#if STATUSBARBORDER
+#include "statusbarborder/statusbarborder.h"
+#endif

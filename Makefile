@@ -12,6 +12,7 @@ all: vxwm
 	${CC} -c ${CFLAGS} $<
 
 ${OBJ}: config.h modules.h config.mk
+vxwm.o: modules/vxwm_includes.c modules/vxwm_includes.h $(wildcard modules/*/*.c) $(wildcard modules/*/*.h)
 
 config.h:
 	cp config.def.h $@
