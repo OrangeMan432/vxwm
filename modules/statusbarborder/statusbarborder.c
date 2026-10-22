@@ -30,4 +30,8 @@ statusbarborder_apply(Monitor *m)
 		return;
 	lastborder[idx] = scheme[SchemeSel][ColBorder].pixel;
 	XSetWindowBorder(dpy, m->barwin, lastborder[idx]);
+#if DUALSTATUS
+	if (m->botwin)
+		XSetWindowBorder(dpy, m->botwin, lastborder[idx]);
+#endif
 }

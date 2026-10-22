@@ -63,6 +63,7 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 #define ALT_CENTER_OF_BAR_COLOR 1 // changes center of bar color to a dark color.
 #define STATUSBARBORDER 1 // Draws a border around the status bar in the active window border color.
 #define TAGANIM 1 // Publishes the tag switch direction on client windows so the compositor can slide them the right way (see picom's _WM_TAGANIM).
+#define DUALSTATUS 0 // Adds a second status bar at the opposite end of the screen (dwm dualstatus patch). The status text is split on ';'.
 #define BAR_HEIGHT 1 // Support for changing bar height.
 #define BAR_PADDING 1 // Support for changing the bar padding.
 #define OCCUPIED_TAGS_DECORATION 0 // This provides the ability to use an alternative text for tags which contain at least one window aka occupied tags.

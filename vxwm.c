@@ -205,6 +205,11 @@ struct Monitor {
 	Client *stack;
 	Monitor *next;
 	Window barwin;
+#if DUALSTATUS
+	Window botwin;
+	int showbotbar;
+	int bby;              /* bottom bar geometry */
+#endif
 	const Layout *lt[2];
 #if PERTAG
 	Pertag *pertag;
@@ -247,6 +252,12 @@ static void detach(Client *c);
 static void detachstack(Client *c);
 static Monitor *dirtomon(int dir);
 static void drawbar(Monitor *m);
+#if DUALSTATUS
+static void drawbotbar(Monitor *m);
+static void splitstatus(void);
+static void togglebotbar(const Arg *arg);
+static void updatebotbarpos(Monitor *m);
+#endif
 static void drawbars(void);
 static void enternotify(XEvent *e);
 static void expose(XEvent *e);
@@ -325,6 +336,10 @@ static void swapmaster(const Arg *arg);
 /* variables */
 static const char broken[] = "broken";
 static char stext[256];
+#if DUALSTATUS
+static char bottext[256];      /* bottom bar, left aligned */
+static char bottext2[256];     /* bottom bar, right aligned */
+#endif
 static int screen;
 static int sw, sh;           /* X display screen geometry width, height */
 static int bh;               /* bar height */
@@ -380,6 +395,9 @@ struct Pertag {
 	unsigned int sellts[LENGTH(tags) + 1]; /* selected layouts */
 	const Layout *ltidxs[LENGTH(tags) + 1][2]; /* matrix of tags and layouts indexes */
 	int showbars[LENGTH(tags) + 1]; /* display bar for the current tag */
+#if DUALSTATUS
+	int showbotbars[LENGTH(tags) + 1]; /* display bottom bar for the current tag */
+#endif
 };
 #endif
 
@@ -672,6 +690,12 @@ cleanupmon(Monitor *mon)
 	}
 	XUnmapWindow(dpy, mon->barwin);
 	XDestroyWindow(dpy, mon->barwin);
+#if DUALSTATUS
+	if (mon->botwin) {
+		XUnmapWindow(dpy, mon->botwin);
+		XDestroyWindow(dpy, mon->botwin);
+	}
+#endif
 #if INFINITE_TAGS
   free(mon->canvas);
 #endif
@@ -747,6 +771,9 @@ configurenotify(XEvent *e)
 #else
         XMoveResizeWindow(dpy, m->barwin, m->wx + lsp - b, m->by + (m->topbar ? tvp : bvp) - b, m->ww - lsp - rsp, bh);
 #endif
+#if DUALSTATUS
+			updatebotbarpos(m);
+#endif
 			}
 			focus(NULL);
 			arrange(NULL);
@@ -817,6 +844,9 @@ createmon(void)
 	m->nmaster = nmaster;
 	m->showbar = showbar;
 	m->topbar = topbar;
+#if DUALSTATUS
+	m->showbotbar = showbotbar;
+#endif
 #if GAPS
   m->gappx = gappx;
 #endif
@@ -836,6 +866,9 @@ createmon(void)
 		m->pertag->sellts[i] = m->sellt;
 
 		m->pertag->showbars[i] = m->showbar;
+#if DUALSTATUS
+		m->pertag->showbotbars[i] = m->showbotbar;
+#endif
 	}
 #endif
 #if INFINITE_TAGS
@@ -1058,6 +1091,59 @@ drawbar(Monitor *m)
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
 }
 
+#if DUALSTATUS
+void
+drawbotbar(Monitor *m)
+{
+	int w, tw = 0;
+
+	if (!m->showbotbar || !m->botwin)
+		return;
+
+	drw_setscheme(drw, scheme[SchemeNorm]);
+	drw_rect(drw, 0, 0, m->ww, bh, 1, 1);
+
+	if (bottext[0]) {
+		w = TEXTW(bottext);
+		drw_text(drw, 0, 0, w, bh, 0, bottext, 0);
+	}
+
+	if (bottext2[0]) {
+		tw = TEXTW(bottext2) - lrpad + 2;
+#if !BAR_PADDING
+		drw_text(drw, m->ww - tw, 0, tw, bh, 0, bottext2, 0);
+#else
+		drw_text(drw, m->ww - tw - lsp - rsp, 0, tw, bh, 0, bottext2, 0);
+#endif
+	}
+#if STATUSBARBORDER
+	statusbarborder_apply(m);
+#endif
+	drw_map(drw, m->botwin, 0, 0, m->ww, bh);
+}
+
+void
+splitstatus(void)
+{
+	char *sep, *text;
+
+	bottext[0] = '\0';
+	bottext2[0] = '\0';
+
+	sep = strchr(stext, ';');
+	if (!sep)
+		return;
+	*sep = '\0';
+	text = sep + 1;
+	sep = strchr(text, ';');
+	if (sep) {
+		*sep = '\0';
+		snprintf(bottext2, sizeof bottext2, "%s", sep + 1);
+	}
+	snprintf(bottext, sizeof bottext, "%s", text);
+}
+#endif
+
 void
 drawbars(void)
 {
@@ -1065,6 +1151,10 @@ drawbars(void)
 
 	for (m = mons; m; m = m->next)
 		drawbar(m);
+#if DUALSTATUS
+	for (m = mons; m; m = m->next)
+		drawbotbar(m);
+#endif
 }
 
 void
@@ -1092,8 +1182,12 @@ expose(XEvent *e)
 	Monitor *m;
 	XExposeEvent *ev = &e->xexpose;
 
-	if (ev->count == 0 && (m = wintomon(ev->window)))
+	if (ev->count == 0 && (m = wintomon(ev->window))) {
 		drawbar(m);
+#if DUALSTATUS
+		drawbotbar(m);
+#endif
+	}
 }
 
 void
@@ -1875,6 +1969,9 @@ restack(Monitor *m)
 #endif
 
 	drawbar(m);
+#if DUALSTATUS
+	drawbotbar(m);
+#endif
 	if (!m->sel)
 		return;
 	if (m->sel->isfloating || !m->lt[m->sellt]->arrange)
@@ -1887,6 +1984,14 @@ restack(Monitor *m)
 				XConfigureWindow(dpy, c->win, CWSibling|CWStackMode, &wc);
 				wc.sibling = c->win;
 			}
+#if DUALSTATUS
+		if (m->botwin) {
+			XWindowChanges bc;
+			bc.stack_mode = Above;
+			bc.sibling = m->barwin;
+			XConfigureWindow(dpy, m->botwin, CWSibling|CWStackMode, &bc);
+		}
+#endif
 	}
 #if BAR_ALWAYS_ON_TOP 
   else {
@@ -1901,6 +2006,10 @@ restack(Monitor *m)
       }
     }
     XRaiseWindow(dpy, m->barwin);
+#if DUALSTATUS
+    if (m->botwin)
+      XRaiseWindow(dpy, m->botwin);
+#endif
 #endif
 #if EXTERNAL_BARS && EXTERNAL_BARS_ALWAYS_ON_TOP
     for (exb = ebarstruts; exb; exb = exb->next)
@@ -2398,24 +2507,25 @@ togglebar(const Arg *arg)
 #endif
     updatebarpos(selmon);
 
-    int bar_y;
-    if (selmon->showbar) {
-        bar_y = selmon->by;
-    } else {
-        if (topbar) {
-            bar_y = -bh;
-        } else {
-            bar_y = selmon->mh + bh;
-        }
-    }
-
 #if STATUSBARBORDER
     int b = statusbarborder_px();
 #else
     int b = 0;
 #endif
+    int bar_y;
+    if (selmon->showbar) {
+        bar_y = selmon->by;
+    } else {
+        /* keep the bar's border off the screen as well */
+        if (topbar) {
+            bar_y = -bh - b;
+        } else {
+            bar_y = selmon->mh + bh + b;
+        }
+    }
+
 #if !BAR_PADDING
-    XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, bar_y, selmon->ww, bh);
+    XMoveResizeWindow(dpy, selmon->barwin, selmon->wx - b, bar_y - b, selmon->ww, bh);
 #else
     int final_y = (selmon->showbar) ? (bar_y + (selmon->topbar ? tvp : bvp)) : bar_y;
     XMoveResizeWindow(dpy, selmon->barwin, selmon->wx + lsp - b, final_y - b, selmon->ww - lsp - rsp, bh);
@@ -2423,6 +2533,22 @@ togglebar(const Arg *arg)
 
     arrange(selmon);
 }
+
+#if DUALSTATUS
+void
+togglebotbar(const Arg *arg)
+{
+#if PERTAG
+    selmon->showbotbar = selmon->pertag->showbotbars[selmon->pertag->curtag] = !selmon->showbotbar;
+#else
+    selmon->showbotbar = !selmon->showbotbar;
+#endif
+    updatebarpos(selmon);
+    updatebotbarpos(selmon);
+    drawbotbar(selmon);
+    arrange(selmon);
+}
+#endif
 
 void
 togglefloating(const Arg *arg)
@@ -2490,6 +2616,10 @@ toggleview(const Arg *arg)
 
 		if (selmon->showbar != selmon->pertag->showbars[selmon->pertag->curtag])
 			togglebar(NULL);
+#if DUALSTATUS
+		if (selmon->showbotbar != selmon->pertag->showbotbars[selmon->pertag->curtag])
+			togglebotbar(NULL);
+#endif
 
 #if TAGANIM
 		taganim_switch();
@@ -2590,6 +2720,25 @@ updatebars(void)
 	};
 	XClassHint ch = {"vxwm", "vxwm"};
 	for (m = mons; m; m = m->next) {
+#if DUALSTATUS
+		if (!m->botwin) {
+#if !BAR_PADDING
+			m->botwin = XCreateWindow(dpy, root, m->wx, m->bby, m->ww, bh, bw, depth,
+#else
+			m->botwin = XCreateWindow(dpy, root, m->wx + lsp - bw, m->bby - bw, m->ww - lsp - rsp, bh, bw, depth,
+#endif
+					InputOutput, visual,
+					CWOverrideRedirect|CWBackPixel|CWBorderPixel|CWColormap|CWEventMask, &wa);
+			XDefineCursor(dpy, m->botwin, cursor[CurNormal]->cursor);
+			XMapRaised(dpy, m->botwin);
+			XSetClassHint(dpy, m->botwin, &ch);
+#if STATUSBARBORDER
+			statusbarborder_reset(m);
+			statusbarborder_apply(m);
+#endif
+			updatebotbarpos(m);
+		}
+#endif
 		if (m->barwin)
 			continue;
 #if !BAR_PADDING
@@ -2630,6 +2779,35 @@ updatebarpos(Monitor *m)
 #else
     m->by = -bh - bvp;
 #endif
+#if DUALSTATUS
+	if (m->showbotbar) {
+		if (m->topbar) {
+#if BAR_PADDING
+			m->bby = m->my + m->mh + bvp - bh;
+#else
+			m->bby = m->my + m->mh - bh;
+#endif
+			m->wh = m->bby - m->wy;
+		} else {
+#if BAR_PADDING
+			m->bby = m->my + tvp;
+			m->wy = m->my + tvp + bh;
+			m->wh = (m->showbar ? m->my + m->mh + bvp - bh : m->my + m->mh) - m->wy;
+#else
+			m->bby = m->my;
+			m->wy = m->my + bh;
+			m->wh = (m->showbar ? m->my + m->mh - bh : m->my + m->mh) - m->wy;
+#endif
+		}
+	} else {
+		m->bby = -bh;
+#if BAR_PADDING
+		/* release the padding reserved for the hidden bar */
+		if (m->showbar)
+			m->wh += m->topbar ? bottom_vertpad : top_vertpad;
+#endif
+	}
+#endif
 #if EXTERNAL_BARS
     m->wx += m->strut_left;
     m->ww -= m->strut_left + m->strut_right;
@@ -2638,7 +2816,32 @@ updatebarpos(Monitor *m)
     if (m->ww < 1) m->ww = 1;
     if (m->wh < 1) m->wh = 1;
  #endif
+#if DUALSTATUS
+	updatebotbarpos(m);
+#endif
 }
+
+#if DUALSTATUS
+void
+updatebotbarpos(Monitor *m)
+{
+	int bar_y;
+
+	if (!m->botwin)
+		return;
+#if STATUSBARBORDER
+	int b = statusbarborder_px();
+#else
+	int b = 0;
+#endif
+	bar_y = m->showbotbar ? m->bby : m->mh + bh;
+#if !BAR_PADDING
+	XMoveResizeWindow(dpy, m->botwin, m->wx, bar_y, m->ww, bh);
+#else
+	XMoveResizeWindow(dpy, m->botwin, m->wx + lsp - b, bar_y - b, m->ww - lsp - rsp, bh);
+#endif
+}
+#endif
 
 void
 updateclientlist(void)
@@ -2797,6 +3000,10 @@ updatestatus(void)
 {
 	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
 		strcpy(stext, "vxwm-"VERSION);
+#if DUALSTATUS
+	splitstatus();
+	drawbotbar(selmon);
+#endif
 	drawbar(selmon);
 }
 
@@ -2894,6 +3101,10 @@ view(const Arg *arg)
 
 	if (selmon->showbar != selmon->pertag->showbars[selmon->pertag->curtag])
 		togglebar(NULL);
+#if DUALSTATUS
+	if (selmon->showbotbar != selmon->pertag->showbotbars[selmon->pertag->curtag])
+		togglebotbar(NULL);
+#endif
 #endif
 
 #if INFINITE_TAGS
@@ -2963,6 +3174,10 @@ view(const Arg *arg)
 
 	if (selmon->showbar != selmon->pertag->showbars[selmon->pertag->curtag])
 		togglebar(NULL);
+#if DUALSTATUS
+	if (selmon->showbotbar != selmon->pertag->showbotbars[selmon->pertag->curtag])
+		togglebotbar(NULL);
+#endif
 #else
     if (arg->ui & TAGMASK)
         selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
