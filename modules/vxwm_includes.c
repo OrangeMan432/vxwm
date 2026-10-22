@@ -60,6 +60,10 @@
 #include "zoom/zoom.c"
 #endif
 
+#if TAGANIM
+#include "taganim/taganim.c"
+#endif
+
 #if STATUSBARBORDER
 #include "statusbarborder/statusbarborder.c"
 #endif

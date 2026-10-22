@@ -2491,12 +2491,18 @@ toggleview(const Arg *arg)
 		if (selmon->showbar != selmon->pertag->showbars[selmon->pertag->curtag])
 			togglebar(NULL);
 
+#if TAGANIM
+		taganim_switch();
+#endif
 		focus(NULL);
 		arrange(selmon);
 	}
 #else
 	if (newtagset) {
 		selmon->tagset[selmon->seltags] = newtagset;
+#if TAGANIM
+		taganim_switch();
+#endif
 		focus(NULL);
 		arrange(selmon);
 	}
@@ -2906,6 +2912,9 @@ view(const Arg *arg)
     }
 #endif
 
+#if TAGANIM
+    taganim_switch();
+#endif
     focus(NULL);
     arrange(selmon);
 #if EWMH_TAGS
@@ -2975,6 +2984,9 @@ view(const Arg *arg)
     }
 #endif
 
+#if TAGANIM
+    taganim_switch();
+#endif
     focus(NULL);
     arrange(selmon);
 #if EWMH_TAGS
