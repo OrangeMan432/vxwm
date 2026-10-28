@@ -16,7 +16,7 @@ enhancedtogglefloating(const Arg *arg)
             w, h, 0);
     } else {
         int tiled_sellt = -1;
-        for (int i = 0; i < LENGTH(layouts); i++) {
+        for (int i = 0; i < 2; i++) {
             if (selmon->lt[i]->arrange != NULL) {
                 tiled_sellt = i;
                 break;
@@ -26,7 +26,7 @@ enhancedtogglefloating(const Arg *arg)
             selmon->sellt = tiled_sellt;
             arrange(selmon);
         }
-        for (int i = 0; i < LENGTH(layouts); i++) {
+        for (int i = 0; i < 2; i++) {
             if (selmon->lt[i] == prevlayout) {
                 selmon->sellt = i;
                 break;
@@ -66,7 +66,7 @@ enhancedtogglefloating(const Arg *arg)
         c->sfw = c->w;
         c->sfh = c->h;
         int tiled_sellt = -1;
-        for (int i = 0; i < LENGTH(layouts); i++) {
+        for (int i = 0; i < 2; i++) {
             if (selmon->lt[i]->arrange != NULL) {
                 tiled_sellt = i;
                 break;
@@ -76,7 +76,7 @@ enhancedtogglefloating(const Arg *arg)
             selmon->sellt = tiled_sellt;
             arrange(selmon);
         }
-        for (int i = 0; i < LENGTH(layouts); i++) {
+        for (int i = 0; i < 2; i++) {
             if (selmon->lt[i] == prevlayout) {
                 selmon->sellt = i;
                 break;

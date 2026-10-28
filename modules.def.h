@@ -1,6 +1,6 @@
 #pragma once
 
-/* vxwm compile-time options */
+/* vxrwm compile-time options */
 
 /* KILLER FEATURES */
 #define INFINITE_TAGS 1
@@ -28,11 +28,9 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 /* Move/Resize */
 #define BETTER_RESIZE 1 // Enables 8 sided window resize.
 #define BR_CHANGE_CURSOR 1 // When resizing windows while having BETTER_RESIZE set to 1, the cursor will change depending on from which side you are resizing.
-#define LOCK_MOVE_RESIZE_REFRESH_RATE 1 // Recommended to use on every pc, because cpu (software) rendered apps like ST will lag when resizing even if you have a good pc.
 #define USE_RESIZECLIENT_FUNC 0 // Use resizeclient function instead of resize function which ignores window's resize hints, not recommended.
 #define RESIZING_WINDOWS_IN_ALL_LAYOUTS_FLOATS_THEM 1 // yeah.
 #define MOVE_RESIZE_WITH_KEYBOARD 1 // Allows to move and resize windows with keyboard.
-
 
 
 /* Kind of eye candy */
@@ -41,38 +39,20 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 #define SMARTBORDERS 0 // Hides window borders in monocle layout or when only one tiled window is visible (smart-borders part of dwm's uselessgaps).
 
 
-
 /* Tagging */
 #define TAG_TO_TAG 0 // If you switch to tag where you already are, it'll switch to previous tag.
 #define PERTAG 1 // Each tag remembers its own layout, mfact, nmaster and bar visibility (dwm pertag).
-#define SLOWER_TAGS_ANIMATION 0 // This slows down tags animation speed, which results in smoother tags animations (requires picom to see any difference).
-#define WINDOWMAP 1
-/* This makes the windows get mapped or unmapped in X11. This results in certain
-   behaviour being enabled, some examples are: fix issues with some applications 
-   losing input forever after a tag change or when you use a compositor like picom, 
-   your windows will fade in and out when you switch dwm tags. */
-
-#define PDWM_LIKE_TAGS_ANIMATION 0
-/* This makes function showhide be like in pdwm, if using a compositor like picom,
-   this results in an alternative tags animation. */
-
 
 
 /* Bar */
 /* Internal */
 #define ALT_CENTER_OF_BAR_COLOR 1 // changes center of bar color to a dark color.
 #define STATUSBARBORDER 0 // Draws a border around the status bar in the active window border color.
-#define TAGANIM 0 // Publishes the tag switch direction on client windows so the compositor can slide them the right way (see picom's _WM_TAGANIM).
 #define DUALSTATUS 0 // Adds a second status bar at the opposite end of the screen (dwm dualstatus patch). The status text is split on ';'.
 #define BAR_HEIGHT 0 // Support for changing bar height.
 #define BAR_PADDING 1 // Support for changing the bar padding.
 #define OCCUPIED_TAGS_DECORATION 0 // This provides the ability to use an alternative text for tags which contain at least one window aka occupied tags.
 #define AWESOMEBAR 0 // Shows all visible windows as clickable tabs in the bar center (dwm awesomebar, without the hide-selected part).
-
-/* External */
-#define EXTERNAL_BARS 1 // Support for external bars, essencial if you want to use external bars.
-#define EWMH_TAGS 1 // Support for EWMH tags, recommended if you want to use external bars with less pain
-
 
 
 /* Warp to client */
@@ -84,7 +64,6 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 #define WARP_TO_CENTER_OF_WINDOW_AFFECTED_BY_ENHANCED_TOGGLE_FLOATING 0 // Warps cursor to center of the window that was affected by using enhancedtogglefloating function.
 #define WARP_TO_CENTER_OF_WINDOW_AFFECTED_BY_FOCUSSTACK 0 // Warps cursor to center of the window that was focused by using focusstack function. 
 #define WARP_TO_CENTER_OF_WINDOW_MOVED_BY_KEYBOARD 0 // Warps cursor to center of the window that is moved by moveresize function. 
-
 
 
 /* Misc */
@@ -106,9 +85,8 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 */
 
 
-
 /* Floating */
-/* Recomended to use with ALWAYS_CENTER_NEW_FLOATING_WINDOWS set to 1. */ 
+/* Recommended to use with CENTER_NEW_FLOATING_WINDOWS set to 1. */
 
 #define FLOATING_LAYOUT_FLOATS_WINDOWS 1 
 /* By default, in floating layout, windows appear to be floating, but, for dwm,
@@ -123,8 +101,6 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 #define RESTORE_SIZE_AND_POS_ETF 1 // Restore previous size and position of window when toggling floating 
 
 
-
 /* Dependency list */
-/* INFINITE_TAGS requires WINDOWMAP, please set WINDOWMAP to 1, if not, it will be automatically enabled.
- * ENHANCED_TOGGLE_FLOATING requires FLOATING_LAYOUT_FLOATS_WINDOWS, please set FLOATING_LAYOUT_FLOATS_WINDOWS to 1, if not, it will be automatically enabled.  */
+/* ENHANCED_TOGGLE_FLOATING requires FLOATING_LAYOUT_FLOATS_WINDOWS, please set FLOATING_LAYOUT_FLOATS_WINDOWS to 1, if not, it will be automatically enabled. */
 

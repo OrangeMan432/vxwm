@@ -49,10 +49,6 @@ static const int right_sidepad = 0;        /* right horizontal padding of bar */
 
 #define BAR_ALWAYS_ON_TOP 1 /* Makes internal bar on top of other windows. */
 
-#if EXTERNAL_BARS
-#define EXTERNAL_BARS_ALWAYS_ON_TOP 1 /* Makes external bars on top of other windows. */
-#endif
-
 #if INFINITE_TAGS
 #define PINNED_WINDOWS_ALWAYS_ON_TOP 1 /* Makes pinned windows on top of other windows */
 #endif
@@ -81,7 +77,7 @@ static const char *occupiedtags[] = { "1+", "2+", "3+", "4+", "5+", "6+", "7+", 
 /* vxwm will execute this on startup (can be skipped with -ignoreautostart vxwm flag). */
 
 static const char *const autostart[] = {
-	"st",
+	"foot",
 	NULL /* must end with NULL */
 };
 #endif
@@ -101,9 +97,6 @@ static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] 
 static const int nmaster     = 1;    /* number of clients in master area */
 static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
-#if LOCK_MOVE_RESIZE_REFRESH_RATE
-static const int refreshrate = 360;  /* refresh rate (per second) for client move/resize, set it to your monitor refresh rate or double of that*/
-#endif //LOCK_MOVE_RESIZE_REFRESH_RATE
 static const Layout layouts[] = {
 	/* symbol     arrange function */
   { "><>",      NULL },    /* no layout function means floating behavior */
@@ -131,7 +124,7 @@ static const Layout layouts[] = {
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-fn", dmenufont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbordercolor, "-sf", selfgcolor, NULL };
 
-static const char *termcmd[]  = { "st", NULL };
+static const char *termcmd[]  = { "foot", NULL };
 
 #if ZOOM
 static const char *zoomin[] = { "vcompmgr", "-Z", "+0.15", NULL }; // zoom in
@@ -174,9 +167,6 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
-#if XRDB
-  { MODKEY,                       XK_F5,     xrdb,           {.v = NULL } },
-#endif
 #if FULLSCREEN
   { MODKEY|ShiftMask,             XK_f,      togglefullscr,  {0} },
 #endif

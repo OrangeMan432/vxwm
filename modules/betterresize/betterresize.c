@@ -1,124 +1,75 @@
 void
 resizemouse(const Arg *arg)
 {
-    Client *c;
-    Monitor *m;
-    XEvent ev;
-#if LOCK_MOVE_RESIZE_REFRESH_RATE
-    Time lasttime = 0;
-#endif
-    if (!(c = selmon->sel) || c->isfullscreen)
-        return;
+	Client *c;
+	Seat *s = curinput;
+	int rx, ry;
+	int left, right, top, bottom;
 
-    restack(selmon);
+	(void)arg;
 
-    int orig_x = c->x;
-    int orig_y = c->y;
-    int orig_w = c->w;
-    int orig_h = c->h;
+	if (op != OP_NONE || !s || !s->obj || !s->havePos)
+		return;
+	if (!(c = selmon->sel) || c->isfullscreen)
+		return;
 
-    int rx, ry;
-    Window junkwin;
-    int junk_signed;
-    unsigned int junk;
-    if (!XQueryPointer(dpy, c->win, &junkwin, &junkwin, &junk_signed, &junk_signed, &rx, &ry, &junk))
-        return;
-    int left   = rx < orig_w / 3;
-    int right  = rx > orig_w * 2 / 3;
-    int top    = ry < orig_h / 3;
-    int bottom = ry > orig_h * 2 / 3;
+	restack(selmon);
+
+	opStartX = c->x;
+	opStartY = c->y;
+	opStartW = c->w;
+	opStartH = c->h;
+	opClient = c;
+	opSeat = s;
+	opShell = NULL;
+	opAccX = opAccY = 0.0f;
+	opAppliedX = c->x;
+	opAppliedY = c->y;
+
+	rx = s->px - (c->x + c->bw);
+	ry = s->py - (c->y + c->bw);
+	left   = rx < c->w / 3;
+	right  = rx > c->w * 2 / 3;
+	top    = ry < c->h / 3;
+	bottom = ry > c->h * 2 / 3;
+	if (!left && !right)
+		right = 1;
+	if (!top && !bottom)
+		bottom = 1;
+
+	opEdges = (unsigned int)((left ? RIVER_WINDOW_V1_EDGES_LEFT : 0)
+		| (right ? RIVER_WINDOW_V1_EDGES_RIGHT : 0)
+		| (top ? RIVER_WINDOW_V1_EDGES_TOP : 0)
+		| (bottom ? RIVER_WINDOW_V1_EDGES_BOTTOM : 0));
+
 #if BR_CHANGE_CURSOR
-    Cursor cur;
-    if (top && left)         cur = cursor[CurNW]->cursor;
-    else if (top && right)   cur = cursor[CurNE]->cursor;
-    else if (bottom && left) cur = cursor[CurSW]->cursor;
-    else if (bottom && right) cur = cursor[CurSE]->cursor;
-    else if (top)            cur = cursor[CurN]->cursor;
-    else if (bottom)         cur = cursor[CurS]->cursor;
-    else if (left)           cur = cursor[CurW]->cursor;
-    else if (right)          cur = cursor[CurE]->cursor;
-    else                     cur = cursor[CurResize]->cursor; // fallback
-#else 
-    Cursor cur = cursor[CurResize]->cursor; 
-#endif
-    if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
-                     None, cur, CurrentTime) != GrabSuccess)
-        return;
-    do {
-        XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
-
-        if (ev.type == MotionNotify) {
-#if LOCK_MOVE_RESIZE_REFRESH_RATE
-            if (ev.xmotion.time - lasttime <= (1000 / refreshrate))
-                continue;
-            lasttime = ev.xmotion.time;
-#endif
-            int dx = ev.xmotion.x_root - (orig_x + rx);
-            int dy = ev.xmotion.y_root - (orig_y + ry);
-
-            int nx = orig_x;
-            int ny = orig_y;
-            int nw = orig_w;
-            int nh = orig_h;
-
-            if (left)   nw = orig_w - dx;
-            else if (right) nw = orig_w + dx;
-
-            if (top)    nh = orig_h - dy;
-            else if (bottom) nh = orig_h + dy;
-
-            int min_w = MAX(1, c->minw);
-            int min_h = MAX(1, c->minh);
-            
-            if (nw < min_w) nw = min_w;
-            if (nh < min_h) nh = min_h;
-
-            if (left)   nx = orig_x + (orig_w - nw);
-            if (top)    ny = orig_y + (orig_h - nh);
-
-            int dx_final = nw - orig_w;
-            int dy_final = nh - orig_h;
-#if !RESIZINIG_WINDOWS_IN_ALL_LAYOUTS_FLOATS_THEM
-            if (!c->isfloating && selmon->lt[selmon->sellt]->arrange &&
-              (abs(dx_final) > snap || abs(dy_final) > snap)) {
+	{
+		uint32_t shape;
+		if (top && left)
+			shape = cursor[CurNW]->cursor;
+		else if (top && right)
+			shape = cursor[CurNE]->cursor;
+		else if (bottom && left)
+			shape = cursor[CurSW]->cursor;
+		else if (bottom && right)
+			shape = cursor[CurSE]->cursor;
+		else if (top)
+			shape = cursor[CurN]->cursor;
+		else if (bottom)
+			shape = cursor[CurS]->cursor;
+		else if (left)
+			shape = cursor[CurW]->cursor;
+		else
+			shape = cursor[CurE]->cursor;
+		seat_setshape(s, shape);
+	}
 #else
-            if (!c->isfloating && (abs(dx_final) > snap || abs(dy_final) > snap)) {
+	seat_setshape(s, cursor[CurResize]->cursor);
 #endif
-              if (nx >= selmon->wx && nx + nw <= selmon->wx + selmon->ww &&
-                ny >= selmon->wy && ny + nh <= selmon->wy + selmon->wh) {
 
-                togglefloating(NULL);
-
-                orig_x = c->x;
-                orig_y = c->y;
-                orig_w = c->w;
-                orig_h = c->h;
-              }
-            }
-#if USE_RESIZECLIENT_FUNC           
-           resizeclient(c, nx, ny, nw, nh);
-#else
-           resize(c, nx, ny, nw, nh, 1);
-#endif
-           drawbar(selmon); //fix for issue 1
-        }
-    } while (ev.type != ButtonRelease);
-
-    XUngrabPointer(dpy, CurrentTime);
-    while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
-
-    if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
-        sendmon(c, m);
-        selmon = m;
-        focus(NULL);
-    }
-#if ENHANCED_TOGGLE_FLOATING && RESTORE_SIZE_AND_POS_ETF
-  c->wasmanuallyedited = 1;
-  if (c->isfloating) {
-    c->sfx = c->x;
-    c->sfy = c->y;
-    c->sfw = c->w;
-    c->sfh = c->h;
-  }
-#endif
+	s->opStarted = 1;
+	s->opDx = s->opDy = 0;
+	op = OP_RESIZE;
+	river_window_v1_inform_resize_start(c->obj);
+	river_seat_v1_op_start_pointer(s->obj);
 }

@@ -16,14 +16,12 @@ homecanvas(const Arg *arg) {
         if ((c->tags & (1 << tagidx)) && !c->is_pinned) {
             c->x -= cx;
             c->y -= cy;
-            XMoveWindow(dpy, c->win, c->x, c->y);
         }
     }
     
     selmon->canvas[tagidx].cx = 0;
     selmon->canvas[tagidx].cy = 0;
-    drawbar(selmon); 
-    XFlush(dpy);
+    drawbar(selmon);
 }
 
 void
@@ -56,7 +54,6 @@ movecanvas(const Arg *arg)
 		if (ISVISIBLE(c) && !c->is_pinned) {
 			c->x -= dx;
 			c->y -= dy;
-			XMoveWindow(dpy, c->win, c->x, c->y);
 		}
 	}
 
@@ -65,84 +62,34 @@ movecanvas(const Arg *arg)
 
 void
 movecanvasmouse(const Arg *arg) {
-    if (selmon->lt[selmon->sellt]->arrange != NULL)
+    Monitor *m = selmon;
+    Seat *s = curinput;
+
+    if (m->lt[m->sellt]->arrange != NULL)
       return;
-    if (selmon->sel && selmon->sel->isfullscreen)
+    if (m->sel && m->sel->isfullscreen)
       return;
-    int start_x, start_y;
-    Window dummy;
-    int di;
-    unsigned int dui;
-    int tagidx = getcurrenttag(selmon);
-    float multiplier = arg ? arg->f : 1.0f;
-    float accum_x = 0.0f, accum_y = 0.0f;
+    if (op != OP_NONE || !s || !s->obj)
+      return;
+
+    op = OP_CANVAS;
+    opSeat = s;
+    opClient = NULL;
+    opShell = s->ownHover;
+    opStartX = s->px;
+    opStartY = s->py;
+    opAccX = opAccY = 0.0f;
+    opFracX = opFracY = 0.0f;
+    opMul = (arg && arg->f) ? arg->f : 1.0f;
 #if ZOOM
-    float zoom_val = zoom_value();
-#endif
-
-
-#if LOCK_MOVE_RESIZE_REFRESH_RATE
-    Time lasttime = 0;
-#endif
-
-    if (!XQueryPointer(dpy, root, &dummy, &dummy, &start_x, &start_y, &di, &di, &dui))
-        return;
-    
-    if (XGrabPointer(dpy, root, False, MOUSEMASK, GrabModeAsync, GrabModeAsync,
-        None, cursor[CurMove]->cursor, CurrentTime) != GrabSuccess)
-        return;
-    
-    XEvent ev;
-    do {
-        XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
-        
-        switch (ev.type) {
-        case MotionNotify:
-        {
-#if LOCK_MOVE_RESIZE_REFRESH_RATE
-            if ((ev.xmotion.time - lasttime) <= (1000 / refreshrate))
-                continue;
-            lasttime = ev.xmotion.time;
-#endif
-            int nx = ev.xmotion.x - start_x;
-            int ny = ev.xmotion.y - start_y;
-
-            /* accumulate subpixel remainder to not lose fractional pixels:
-               multiplier=0.5, nx=1: accum=0.5, dx=0 --- skip
-               nx=1:           accum=1.0, dx=1       --- move 
-            */
-#if !ZOOM
-            accum_x += nx * multiplier;
-            accum_y += ny * multiplier;
+    opZoom = zoom_value();
 #else
-            accum_x += nx * multiplier / zoom_val;
-            accum_y += ny * multiplier / zoom_val;
+    opZoom = 1.0f;
 #endif
-
-            int dx = (int)accum_x;
-            int dy = (int)accum_y;
-
-            accum_x -= dx;
-            accum_y -= dy;
-
-            for (Client *c = selmon->clients; c; c = c->next) {
-                if ((c->tags & (1 << tagidx)) && !c->is_pinned) {
-                    c->x += dx;
-                    c->y += dy;
-                    XMoveWindow(dpy, c->win, c->x, c->y);
-                }
-            }
-
-            selmon->canvas[tagidx].cx += dx;
-            selmon->canvas[tagidx].cy += dy;
-            drawbar(selmon); 
-            start_x = ev.xmotion.x;
-            start_y = ev.xmotion.y;
-        }   break;
-        }
-    } while (ev.type != ButtonRelease);
-    
-    XUngrabPointer(dpy, CurrentTime);
+    s->opStarted = 1;
+    s->opDx = s->opDy = 0;
+    river_seat_v1_op_start_pointer(s->obj);
+    seat_setshape(s, cursor[CurMove]->cursor);
 }
 
 void
@@ -181,17 +128,12 @@ restore_canvas_positions(Monitor *m) {
             int target_x = c->saved_cx - m->canvas[tagidx].cx;
             int target_y = c->saved_cy - m->canvas[tagidx].cy;
 
-            c->x = target_x;
-            c->y = target_y;
             c->w = c->saved_cw;
             c->h = c->saved_ch;
 
-            XMoveResizeWindow(dpy, c->win, target_x, target_y, c->w, c->h);
-
-            configure(c);
+            resizeclient(c, target_x, target_y, c->saved_cw, c->saved_ch);
         }
     }
-    XSync(dpy, False);
 }
 
 void
@@ -219,7 +161,6 @@ centerwindow(const Arg *arg)
     if (ISVISIBLE(tmp) && !tmp->is_pinned) {
       tmp->x += dx;
       tmp->y += dy;
-      XMoveWindow(dpy, tmp->win, tmp->x, tmp->y);
     }
   }
 

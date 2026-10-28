@@ -1,18 +1,22 @@
 #!/bin/sh
-arg="$1"
+# Restart the river session that runs vxrwm.
 
-if [ $arg != "-h" ]; then
-        echo "Run rvx -h for help"
+arg="${1:-}"
+
+if [ "$arg" != "-h" ]; then
+	echo "Run rvx -h for help"
 fi
 
-if [ $arg = "-d" ]; then
-        killall vxwm 2>/dev/null
-        dbus-run-session vxwm -ignoreautostart
-elif [ $arg = "-h" ]; then
-        echo "rvx:                A tool designed for quickly restarting vxwm"
-        echo "rvx -d:             Restarts vxwm with dbus-run-session"
-        echo "rvx -h:             Show this message"
+if [ "$arg" = "-d" ]; then
+	echo "rvx: restarting the river session with dbus-run-session"
+	setsid sh -c 'sleep 2; exec dbus-run-session river -c vxrwm' >/dev/null 2>&1 &
+	killall river
+elif [ "$arg" = "-h" ]; then
+	echo "rvx:     A tool designed for quickly restarting the river session running vxrwm"
+	echo "rvx -d:  Restarts the session with dbus-run-session"
+	echo "rvx -h:  Show this message"
 else
-        killall vxwm 2>/dev/null
-        vxwm -ignoreautostart
+	echo "rvx: restarting the river session"
+	setsid sh -c 'sleep 2; exec river -c vxrwm' >/dev/null 2>&1 &
+	killall river
 fi

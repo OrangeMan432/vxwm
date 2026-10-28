@@ -1,5 +1,5 @@
-# vxwm version
-VERSION = 2.3
+# vxrwm version
+VERSION = 3.0
 
 # Customize below to fit your system
 
@@ -7,33 +7,23 @@ VERSION = 2.3
 PREFIX = /usr/local
 MANPREFIX = ${PREFIX}/share/man
 
-X11INC = /usr/X11R6/include
-X11LIB = /usr/X11R6/lib
+# wayland
+WAYLAND_SCANNER   = $(shell pkg-config --variable=wayland_scanner wayland-scanner)
+WAYLAND_PROTOCOLS = $(shell pkg-config --variable=pkgdatadir wayland-protocols)
+RIVER_PROTOCOLS = $(shell pkg-config --variable=pkgdatadir river-protocols)
 
-# Xinerama, comment if you don't want it
-XINERAMALIBS  = -lXinerama
-XINERAMAFLAGS = -DXINERAMA
-
-# freetype
-FREETYPELIBS = -lfontconfig -lXft
-FREETYPEINC = /usr/include/freetype2
-# OpenBSD (uncomment)
-#FREETYPEINC = ${X11INC}/freetype2
-#MANPREFIX = ${PREFIX}/man
+# libraries
+PKGS = wayland-client xkbcommon fcft pixman-1 wayland-cursor
 
 # includes and libs
-INCS = -I${X11INC} -I${FREETYPEINC}
-LIBS = -L${X11LIB} -lX11 ${XINERAMALIBS} ${FREETYPELIBS} -lXrender
+INCS = $(shell pkg-config --cflags ${PKGS})
+LIBS = $(shell pkg-config --libs ${PKGS})
 
 # flags
-CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" -DSRCDIR=\"${CURDIR}\" ${XINERAMAFLAGS}
-#CFLAGS   = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
-CFLAGS   = -std=c99 -pedantic -Wall -Wno-deprecated-declarations ${INCS} ${CPPFLAGS}
+CPPFLAGS = -D_GNU_SOURCE -DVERSION=\"${VERSION}\" -DSRCDIR=\"${CURDIR}\"
+#CFLAGS   = -g -std=c11 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
+CFLAGS   = -std=c11 -pedantic -Wall -Wno-deprecated-declarations ${INCS} ${CPPFLAGS}
 LDFLAGS  = ${LIBS}
-
-# Solaris
-#CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\"
-#LDFLAGS = ${LIBS}
 
 # compiler and linker
 CC = cc

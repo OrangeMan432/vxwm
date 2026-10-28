@@ -4,16 +4,8 @@
 #include "gaps/gaps.h"
 #endif
 
-#if XRDB
-#include "xrdb/xrdb.h"
-#endif
-
 #if FULLSCREEN
 #include "fullscreen/fullscreen.h"
-#endif
-
-#if EWMH_TAGS
-#include "ewmh_tags/ewmh_tags.h"
 #endif
 
 #if WARP_TO_CLIENT
@@ -22,10 +14,6 @@
 
 #if ENHANCED_TOGGLE_FLOATING
 #include "etf/etf.h"
-#endif
-
-#if WINDOWMAP
-#include "windowmap/windowmap.h"
 #endif
 
 #if INFINITE_TAGS
@@ -48,16 +36,8 @@
 #include "autostart/autostart.h"
 #endif
 
-#if EXTERNAL_BARS
-#include "externalbars/externalbars.h"
-#endif
-
 #if ZOOM
 #include "zoom/zoom.h"
-#endif
-
-#if TAGANIM
-#include "taganim/taganim.h"
 #endif
 
 #if STATUSBARBORDER

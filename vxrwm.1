@@ -1,0 +1,185 @@
+.TH VXRWM 1 vxrwm\-VERSION
+.SH NAME
+vxrwm \- Versatile Wayland window manager (dwm fork)
+.SH SYNOPSIS
+.B vxrwm
+.RB [ \-v ]
+.RB [ \-srcdir ]
+.RB [ \-ignoreautostart ]
+.SH DESCRIPTION
+vxrwm is a versatile dynamic window manager for Wayland, forked from dwm and
+ported onto the
+.B river
+window management protocol
+.RB ( river\-window\-management\-v1 ,
+.RB river\-xkb\-bindings\-v1
+and
+.BR river\-layer\-shell\-v1 ).
+Run it as river's configuration command:
+.PP
+.RS
+.EX
+river \-c vxrwm
+.EE
+.RE
+.PP
+It adds quality-of-life features such as 8-sided resize, cursor warping,
+enhanced floating toggle, gaps, fullscreen support and more \- all of which can
+be enabled or disabled at compile time via simple defines in modules.h
+(similar in spirit to dwm-flexipatch).
+
+It manages windows in three layouts: tiled, monocle and floating. Layouts can
+be switched dynamically to optimize for the current task or application.
+
+In tiled layout, windows are arranged in a master area (left, one window by
+default) and a stacking area (right). The number of master windows and master
+area size are adjustable. Monocle maximizes all windows to screen size.
+Floating allows free moving and resizing. Dialogs and certain window types are
+always managed as floating.
+
+Windows are organized by tags. Each window can have one or multiple tags;
+viewing a tag (or set of tags) shows all windows with matching tags.
+
+The status bar (per screen) displays tags, current layout symbol, focused
+window titles, and status text read from a named pipe. Selected tags use
+different colors; occupied tags and focused window tags are indicated with
+squares.
+
+A small border around windows shows focus state.
+.SH OPTIONS
+.TP
+.B \-v
+prints version information to stderr, then exits.
+.TP
+.B \-srcdir
+prints the source directory used to locate auxiliary files, then exits.
+.TP
+.B \-ignoreautostart
+starts without running the modules.h autostart hook.
+.SH STATUS
+.TP
+.B vxrwm reads status text from a named pipe and displays it in the right
+hand side of the status bar. The path is taken from the
+.B VXRWM_STATUS
+environment variable and defaults to
+.BI $XDG_RUNTIME_DIR/vxwm_status
+(falling back to
+.BR /tmp/vxwm_status ).
+The pipe is created if it does not exist. Write to it with e.g.
+.PP
+.RS
+.EX
+echo "$(date)" > $XDG_RUNTIME_DIR/vxwm_status
+.EE
+.RE
+.SH USAGE
+.SS Status bar
+.TP
+.B VXRWM_STATUS
+named pipe
+is read and displayed in the status area (see
+.BR STATUS ).
+.TP
+.B Button1
+on tag → view only that tag  
+on layout symbol → toggle tiled ↔ floating
+.TP
+.B Button3
+on tag → add/remove that tag from view
+.TP
+.B Mod4\-Button1
+on tag → apply tag to focused window
+.TP
+.B Mod4\-Button3
+on tag → toggle tag on focused window
+.SS Keyboard commands (default MODKEY = Mod4)
+.TP
+.B Mod4\-Shift\-Return
+Start
+.BR st(1).
+.TP
+.B Mod4\-p
+Spawn
+.BR dmenu(1)
+for launching programs.
+.TP
+.B Mod4\-b
+Toggle bar visibility.
+.TP
+.B Mod4\-j / k
+Focus next / previous window.
+.TP
+.B Mod4\-i / d
+Increase / decrease number of master windows.
+.TP
+.B Mod4\-h / l
+Decrease / increase master area factor.
+.TP
+.B Mod4\-Return
+Zoom focused window to/from master area (tiled layouts only).
+.TP
+.B Mod4\-0
+View previously selected tags.
+.TP
+.B Mod4\-t / f / m
+Set layout tiled / floating / monocle.
+.TP
+.B Mod4\-space
+Cycle to next layout.
+.TP
+.B Mod4\-Shift\-space
+Toggle focused window floating ↔ tiled.
+.TP
+.B Mod4\-Shift\-c
+Close focused window.
+.TP
+.B Mod4\-[1-9]
+View windows on tag 1–9.
+.TP
+.B Mod4\-Tab
+View all windows (all tags).
+.TP
+.B Mod4\-Control\-[1-9]
+Toggle tag 1–9 into/out of view.
+.TP
+.B Mod1\-[1-9]
+Apply tag 1–9 to focused window.
+.TP
+.B Mod4\-Shift\-0
+Apply all tags to focused window.
+.TP
+.B Mod4\-, / .
+Focus previous / next monitor.
+.TP
+.B Mod4\-Shift\-, / .
+Send focused window to previous / next monitor.
+.TP
+.B Mod4\-Shift\-q
+Quit vxrwm.
+.SS Mouse commands
+.TP
+.B Mod4\-Button1
+Drag to move focused window (toggles tiled → floating).
+.TP
+.B Mod4\-Button2
+Toggle floating state of focused window.
+.TP
+.B Mod4\-Button3
+Drag to resize focused window (toggles tiled → floating).
+
+When BETTER_RESIZE is enabled, resizing works from all 8 sides/corners.
+.SH CUSTOMIZATION
+vxrwm is configured by editing
+.B config.h
+(keys, colors, rules, bar, etc.) and
+.B modules.h
+(enabling/disabling patches and features), then recompiling.  
+This approach keeps vxrwm fast, minimal and secure.
+.SH SEE ALSO
+.BR dwm (1),
+.BR river (1),
+.BR dmenu (1),
+.BR st (1)
+.SH BUGS
+Report bugs and send patches upstream to the maintainer (wh1tepearl) via the repository:  
+https://codeberg.org/wh1tepearl/vxwm

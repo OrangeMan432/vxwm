@@ -4,7 +4,6 @@ moveresize(const Arg *arg)
 {
   if (selmon->sel && selmon->sel->isfullscreen)
     return;
-	XEvent ev;
 	Monitor *m = selmon;
 
 	if(!(m->sel && arg && arg->v && m->sel->isfloating)) {
@@ -19,8 +18,6 @@ moveresize(const Arg *arg)
 #endif
 		return;
   }
-
-  XRaiseWindow(dpy, m->sel->win);
 
 	resize(m->sel, m->sel->x + ((int *)arg->v)[0],
 		m->sel->y + ((int *)arg->v)[1],
@@ -43,8 +40,6 @@ moveresize(const Arg *arg)
 #if WARP_TO_CLIENT && WARP_TO_CENTER_OF_WINDOW_MOVED_BY_KEYBOARD
   warptoclient(m->sel);
 #endif
-
-	while(XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 }
 
 #else
@@ -60,7 +55,6 @@ moveresize(const Arg *arg)
   int dw = ((int *)arg->v)[2];
   int dh = ((int *)arg->v)[3];
 
-  XEvent ev;
   Monitor *m = selmon;
 
   if (!m->sel || !arg || !arg->v)
@@ -80,8 +74,6 @@ moveresize(const Arg *arg)
 
 
   Client *c = m->sel;
-
-  XRaiseWindow(dpy, c->win);
 
   if (selmon->lt[selmon->sellt]->arrange != NULL) {
     resize(c,
@@ -125,7 +117,6 @@ moveresize(const Arg *arg)
           if (ISVISIBLE(tmp) && tmp != c) {
             tmp->x -= canvas_dx;
             tmp->y -= canvas_dy;
-            XMoveWindow(dpy, tmp->win, tmp->x, tmp->y);
           }
         }
       }
@@ -149,8 +140,6 @@ moveresize(const Arg *arg)
 #if WARP_TO_CLIENT && WARP_TO_CENTER_OF_WINDOW_MOVED_BY_KEYBOARD
   warptoclient(c);
 #endif
-
-  while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 
 #if IT_SHOW_COORDINATES_IN_BAR
   drawbar(m);

@@ -4,16 +4,8 @@
 #include "gaps/gaps.c"
 #endif
 
-#if XRDB
-#include "xrdb/xrdb.c"
-#endif
-
 #if FULLSCREEN
 #include "fullscreen/fullscreen.c"
-#endif
-
-#if EWMH_TAGS
-#include "ewmh_tags/ewmh_tags.c"
 #endif
 
 #if WARP_TO_CLIENT
@@ -26,10 +18,6 @@
 
 #if BETTER_RESIZE
 #include "betterresize/betterresize.c"
-#endif
-
-#if WINDOWMAP
-#include "windowmap/windowmap.c"
 #endif
 
 #if INFINITE_TAGS
@@ -52,16 +40,8 @@
 #include "autostart/autostart.c"
 #endif
 
-#if EXTERNAL_BARS
-#include "externalbars/externalbars.c"
-#endif
-
 #if ZOOM
 #include "zoom/zoom.c"
-#endif
-
-#if TAGANIM
-#include "taganim/taganim.c"
 #endif
 
 #if STATUSBARBORDER

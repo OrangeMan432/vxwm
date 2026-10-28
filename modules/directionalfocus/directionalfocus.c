@@ -108,6 +108,5 @@ focusdir(const Arg *arg)
 #if WARP_TO_CLIENT && WARP_TO_CENTER_OF_WINDOW_AFFECTED_BY_FOCUSSTACK
 		warptoclient(f);
 #endif
-		restack(f->mon);
 	}
 }
