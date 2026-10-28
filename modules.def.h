@@ -36,14 +36,14 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 
 
 /* Kind of eye candy */
-#define GAPS 1 // Gaps support.
+#define GAPS 0 // Gaps support.
 #define XRDB 1 // Xrdb support.
-#define SMARTBORDERS 1 // Hides window borders in monocle layout or when only one tiled window is visible (smart-borders part of dwm's uselessgaps).
+#define SMARTBORDERS 0 // Hides window borders in monocle layout or when only one tiled window is visible (smart-borders part of dwm's uselessgaps).
 
 
 
 /* Tagging */
-#define TAG_TO_TAG 1 // If you switch to tag where you already are, it'll switch to previous tag.
+#define TAG_TO_TAG 0 // If you switch to tag where you already are, it'll switch to previous tag.
 #define PERTAG 1 // Each tag remembers its own layout, mfact, nmaster and bar visibility (dwm pertag).
 #define SLOWER_TAGS_ANIMATION 0 // This slows down tags animation speed, which results in smoother tags animations (requires picom to see any difference).
 #define WINDOWMAP 1
@@ -64,7 +64,7 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 #define STATUSBARBORDER 0 // Draws a border around the status bar in the active window border color.
 #define TAGANIM 0 // Publishes the tag switch direction on client windows so the compositor can slide them the right way (see picom's _WM_TAGANIM).
 #define DUALSTATUS 0 // Adds a second status bar at the opposite end of the screen (dwm dualstatus patch). The status text is split on ';'.
-#define BAR_HEIGHT 1 // Support for changing bar height.
+#define BAR_HEIGHT 0 // Support for changing bar height.
 #define BAR_PADDING 1 // Support for changing the bar padding.
 #define OCCUPIED_TAGS_DECORATION 0 // This provides the ability to use an alternative text for tags which contain at least one window aka occupied tags.
 #define AWESOMEBAR 0 // Shows all visible windows as clickable tabs in the bar center (dwm awesomebar, without the hide-selected part).

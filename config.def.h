@@ -112,8 +112,8 @@ static const Layout layouts[] = {
 };
 
 /* key definitions */
-#define MODKEY Mod4Mask
-#define ALTERNATE_MODKEY Mod1Mask
+#define MODKEY Mod1Mask
+#define ALTERNATE_MODKEY Mod4Mask
 
 #define SCROLL_UP Button4
 #define SCROLL_DOWN Button5
