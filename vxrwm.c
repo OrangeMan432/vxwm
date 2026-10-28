@@ -2485,6 +2485,7 @@ buttonpress(Seat *s)
 				click = ClkStatusText;
 			} else {
 				x += TEXTW(m->ltsymbol);
+#if AWESOMEBAR
 				tc = m->clients;
 				if (tc && m->bt > 0) {
 					do {
@@ -2495,6 +2496,7 @@ buttonpress(Seat *s)
 					click = ClkWinTitle;
 					arg.v = tc;
 				}
+#endif
 			}
 		}
 	} else if (s->interactClient || s->hover) {
