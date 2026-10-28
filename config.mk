@@ -1,5 +1,5 @@
 # vxrwm version
-VERSION = 3.0
+VERSION = 2.3
 
 # Customize below to fit your system
 
