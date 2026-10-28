@@ -67,7 +67,7 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 #define BAR_HEIGHT 1 // Support for changing bar height.
 #define BAR_PADDING 1 // Support for changing the bar padding.
 #define OCCUPIED_TAGS_DECORATION 0 // This provides the ability to use an alternative text for tags which contain at least one window aka occupied tags.
-#define AWESOMEBAR 1 // Shows all visible windows as clickable tabs in the bar center (dwm awesomebar, without the hide-selected part).
+#define AWESOMEBAR 0 // Shows all visible windows as clickable tabs in the bar center (dwm awesomebar, without the hide-selected part).
 
 /* External */
 #define EXTERNAL_BARS 1 // Support for external bars, essencial if you want to use external bars.
