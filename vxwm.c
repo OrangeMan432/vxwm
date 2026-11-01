@@ -385,7 +385,6 @@ static Colormap cmap;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
-#include "modules/vxwm_includes.c"
 
 #if PERTAG
 struct Pertag {
@@ -403,6 +402,8 @@ struct Pertag {
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
+
+#include "modules/vxwm_includes.c"
 
 /* function implementations */
 void
@@ -534,6 +535,10 @@ arrange(Monitor *m)
 		restack(m);
 	} else for (m = mons; m; m = m->next)
 		arrangemon(m);
+
+#if PRESERVE_ON_RESTART && PERTAG
+	preserveonrestart_pertag_save();
+#endif
 }
 
 void
@@ -2358,6 +2363,9 @@ setup(void)
 	XChangeWindowAttributes(dpy, root, CWEventMask|CWCursor, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys();
+#if PRESERVE_ON_RESTART && PERTAG
+	preserveonrestart_pertag_restore();
+#endif
 	focus(NULL);
 }
 
