@@ -1534,6 +1534,9 @@ manage(Window w, XWindowAttributes *wa)
 	updatewindowtype(c);
 	updatesizehints(c);
 	updatewmhints(c);
+#if PRESERVE_ON_RESTART
+	preserveonrestart_restore(c);
+#endif
 #if CENTER_NEW_FLOATING_WINDOWS && !NEW_WINDOWS_APPEAR_UNDER_CURSOR
   c->x = c->mon->wx + (c->mon->ww - WIDTH(c)) / 2;
   c->y = c->mon->wy + (c->mon->wh - HEIGHT(c)) / 2;
@@ -1566,7 +1569,11 @@ manage(Window w, XWindowAttributes *wa)
 		unfocus(selmon->sel, 0);
 	c->mon->sel = c;
 	arrange(c->mon);
+#if PRESERVE_ON_RESTART
+	preserveonrestart_map(c);
+#else
 	XMapWindow(dpy, c->win);
+#endif
 	focus(NULL);
 #if WARP_TO_CLIENT && WARP_TO_CENTER_OF_NEW_WINDOW 
   warptoclient(c);
@@ -2090,6 +2097,9 @@ sendmon(Client *c, Monitor *m)
 	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
 	attach(c);
 	attachstack(c);
+#if PRESERVE_ON_RESTART
+	preserveonrestart_update(c);
+#endif
 	#if EWMH_TAGS
 	updatewmdesktop(c);
 	#endif
@@ -2436,6 +2446,9 @@ tag(const Arg *arg)
 #endif
 
         selmon->sel->tags = arg->ui & TAGMASK;
+#if PRESERVE_ON_RESTART
+        preserveonrestart_update(selmon->sel);
+#endif
 		#if EWMH_TAGS
 		updatewmdesktop(selmon->sel);
 		#endif
@@ -2574,6 +2587,9 @@ toggletag(const Arg *arg)
 	newtags = selmon->sel->tags ^ (arg->ui & TAGMASK);
 	if (newtags) {
 		selmon->sel->tags = newtags;
+#if PRESERVE_ON_RESTART
+		preserveonrestart_update(selmon->sel);
+#endif
 		#if EWMH_TAGS
 		updatewmdesktop(selmon->sel);
 		#endif

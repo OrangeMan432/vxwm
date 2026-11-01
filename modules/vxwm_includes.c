@@ -32,6 +32,10 @@
 #include "windowmap/windowmap.c"
 #endif
 
+#if PRESERVE_ON_RESTART
+#include "preserveonrestart/preserveonrestart.c"
+#endif
+
 #if INFINITE_TAGS
 #include "infinitetags/infinitetags.c"
 #endif

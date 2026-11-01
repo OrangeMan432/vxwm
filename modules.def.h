@@ -45,6 +45,7 @@ Even though this sounds complex, it is actually pretty lightweight, and is very 
 /* Tagging */
 #define TAG_TO_TAG 0 // If you switch to tag where you already are, it'll switch to previous tag.
 #define PERTAG 1 // Each tag remembers its own layout, mfact, nmaster and bar visibility (dwm pertag).
+#define PRESERVE_ON_RESTART 1 // Keep clients on their tags and monitor when vxwm is restarted (preserveonrestart patch, layout order is not preserved).
 #define SLOWER_TAGS_ANIMATION 0 // This slows down tags animation speed, which results in smoother tags animations (requires picom to see any difference).
 #define WINDOWMAP 1
 /* This makes the windows get mapped or unmapped in X11. This results in certain

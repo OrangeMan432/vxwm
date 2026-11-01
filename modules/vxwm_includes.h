@@ -28,6 +28,10 @@
 #include "windowmap/windowmap.h"
 #endif
 
+#if PRESERVE_ON_RESTART
+#include "preserveonrestart/preserveonrestart.h"
+#endif
+
 #if INFINITE_TAGS
 #include "infinitetags/infinitetags.h"
 #endif
